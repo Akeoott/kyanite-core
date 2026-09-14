@@ -1,25 +1,18 @@
 [package]
 name = "kyanite-core"
 description = "The core library for the kyanite project"
-authors = ["Kyanite Project <contact@kyanite.mov>"]
 version = "1.0.0-alpha.3"
 rust-version = "1.98.0"
 edition = "2024"
 
 license = "GPL-3.0-or-later"
+authors = ["Kyanite Project <contact@kyanite.mov>"]
 homepage = "https://kyanite.mov"
 repository = "https://github.com/Akeoott/kyanite-core"
 
 keywords = ["system", "kernel", "hardware", "telemetry", "process-management"]
 categories = ["os", "command-line-utilities", "hardware-support", "filesystem"]
-
-exclude = [
-    ".github/",
-    ".vscode/",
-    ".editorconfig",
-    ".gitignore",
-    ".gitattributes",
-]
+exclude = [".github/", ".vscode/", ".editorconfig", ".gitignore", ".gitattributes"]
 
 [package.metadata.docs.rs]
 all-features = true
@@ -29,15 +22,21 @@ rustdoc-args = ["--cfg", "docsrs"]
 default = []
 full = ["telemetry"]
 telemetry = []
+test = ["dep:mock_instant"]
+
+[dependencies]
+env_logger = "0.11.11"
+log = "0.4.34"
+mock_instant = { version = "0.6.1", optional = true }
+rayon = "1.12.0"
+serde = { version = "1.0.229", features = ["derive"] }
+vfs = "0.13.0"
 
 [[example]]
 name = "telemetry"
 required-features = ["telemetry"]
 
-[dev-dependencies]
-
-[dependencies]
-serde = { version = "1.0.229", features = ["derive"] }
-rayon = "1.12.0"
-log = "0.4.34"
-env_logger = "0.11.11"
+[[test]]
+name = "cpu"
+path = "tests/telemetry/linux/cpu.rs"
+required-features = ["test", "telemetry"]
