@@ -218,7 +218,7 @@ dependencies = [
 
 [[package]]
 name = "kyanite-core"
-version = "1.0.0-alpha.3"
+version = "1.0.0-alpha.4"
 dependencies = [
  "env_logger",
  "log",
