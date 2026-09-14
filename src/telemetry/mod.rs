@@ -6,15 +6,15 @@ use log::debug;
 
 /// use the linux implementation as the platform
 #[cfg(target_os = "linux")]
-pub mod linux;
+mod linux;
 #[cfg(target_os = "linux")]
-pub use linux as platform;
+use linux as platform;
 
 /// use the windows implementation as the platform
 #[cfg(target_os = "windows")]
-pub mod windows;
+mod windows;
 #[cfg(target_os = "windows")]
-pub use windows as platform;
+use windows as platform;
 
 pub use platform::{
     cpu::CpuTel, drive::DriveTel, gpu::GpuTel, memory::MemoryTel, network::NetworkTel,
