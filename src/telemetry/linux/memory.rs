@@ -3,11 +3,19 @@
 
 use crate::telemetry::models::MemoryTelSnapshot;
 
+/// Stub
 pub struct MemoryTel {
     snapshot: MemoryTelSnapshot,
 }
 
+impl Default for MemoryTel {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl MemoryTel {
+    /// Stub
     pub fn new() -> Self {
         Self {
             snapshot: MemoryTelSnapshot::default(),

@@ -3,11 +3,19 @@
 
 use crate::telemetry::models::DriveTelSnapshot;
 
+/// Stub
 pub struct DriveTel {
     snapshot: DriveTelSnapshot,
 }
 
+impl Default for DriveTel {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl DriveTel {
+    /// Stub
     pub fn new() -> Self {
         Self {
             snapshot: DriveTelSnapshot::default(),

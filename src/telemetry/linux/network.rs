@@ -3,11 +3,19 @@
 
 use crate::telemetry::models::NetworkTelSnapshot;
 
+/// Stub
 pub struct NetworkTel {
     snapshot: NetworkTelSnapshot,
 }
 
+impl Default for NetworkTel {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl NetworkTel {
+    /// Stub
     pub fn new() -> Self {
         Self {
             snapshot: NetworkTelSnapshot::default(),

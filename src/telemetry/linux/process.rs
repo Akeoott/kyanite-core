@@ -3,11 +3,19 @@
 
 use crate::telemetry::models::ProcessTelSnapshot;
 
+/// Stub
 pub struct ProcessTel {
     snapshot: ProcessTelSnapshot,
 }
 
+impl Default for ProcessTel {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ProcessTel {
+    /// Stub
     pub fn new() -> Self {
         Self {
             snapshot: ProcessTelSnapshot::default(),
