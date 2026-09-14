@@ -3,16 +3,24 @@
 
 use crate::telemetry::models::{CpuCoreUsage, CpuTelSnapshot};
 use log::{trace, warn};
-use std::path::PathBuf;
+use vfs::{PhysicalFS, VfsPath};
+
+#[cfg(feature = "test")]
+use mock_instant::thread_local::Instant;
+#[cfg(not(feature = "test"))]
 use std::time::Instant;
 
-const CPUINFO_PATH: &str = "/proc/cpuinfo";
-const PROCSTAT_PATH: &str = "/proc/stat";
-const HWMON_ROOT: &str = "/sys/class/hwmon";
-const POWERCAP_ROOT: &str = "/sys/class/powercap";
+const CPUINFO_PATH: &str = "proc/cpuinfo";
+const PROCSTAT_PATH: &str = "proc/stat";
+const HWMON_ROOT: &str = "sys/class/hwmon";
+const POWERCAP_ROOT: &str = "sys/class/powercap";
 const RAPL_DIR_PREFIXES: &[&str] = &["intel-rapl", "amd-rapl"];
 
+/// CPU telemetry collector.
 pub struct CpuTel {
+    /// Virtual file system
+    root: VfsPath,
+
     snapshot: CpuTelSnapshot,
 
     // /proc/stat delta state
@@ -21,15 +29,28 @@ pub struct CpuTel {
     first_usage_read: bool,
 
     // /sys/class/powercap (RAPL) delta state
-    energy_path: Option<PathBuf>,
+    energy_path: Option<VfsPath>,
     prev_energy_uj: f64,
     prev_energy_time: Instant,
     rapl_discovered: bool,
 }
 
+impl Default for CpuTel {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl CpuTel {
+    /// Creates a new CPU telemetry instance backed by the real filesystem.
     pub fn new() -> Self {
+        Self::with_root(VfsPath::new(PhysicalFS::new("/")))
+    }
+
+    /// Creates a new CPU telemetry instance reading from a custom filesystem root.
+    pub fn with_root(root: VfsPath) -> Self {
         Self {
+            root,
             snapshot: CpuTelSnapshot::default(),
             prev_total_ticks: Vec::new(),
             prev_core_ticks: Vec::new(),
@@ -41,20 +62,25 @@ impl CpuTel {
         }
     }
 
+    /// Returns the current snapshot state.
+    /// Invalidates after updating.
     pub fn snapshot(&self) -> &CpuTelSnapshot {
         &self.snapshot
     }
 
+    /// Refresh cached snapshot with new data
     pub fn update(&mut self) {
         trace!("Fetching all CPU info...");
 
-        let (cpu_model, core_frequencies) = cpu_impl::read_cpu_info().unwrap_or_else(|e| {
-            warn!("Failed to read {CPUINFO_PATH}: {e}");
-            ("Unknown CPU".to_owned(), Vec::new())
-        });
+        let (cpu_model, core_frequencies) =
+            cpu_impl::read_cpu_info(&self.root).unwrap_or_else(|e| {
+                warn!("Failed to read {CPUINFO_PATH}: {e}");
+                ("Unknown CPU".to_owned(), Vec::new())
+            });
 
         let (cpu_usage, core_usages) = self.poll_usage();
-        let (cpu_temperature, core_temperatures) = cpu_impl::read_cpu_temps(core_usages.len());
+        let (cpu_temperature, core_temperatures) =
+            cpu_impl::read_cpu_temps(&self.root, core_usages.len());
         let power_draw = self.poll_power();
 
         let cpu_frequency = if core_frequencies.is_empty() {
@@ -77,7 +103,7 @@ impl CpuTel {
     }
 
     fn poll_usage(&mut self) -> (i32, Vec<CpuCoreUsage>) {
-        let (curr_total, curr_cores) = match cpu_impl::read_current_ticks() {
+        let (curr_total, curr_cores) = match cpu_impl::read_current_ticks(&self.root) {
             Ok(v) => v,
             Err(e) => {
                 warn!("Failed to read {PROCSTAT_PATH}: {e}");
@@ -85,7 +111,6 @@ impl CpuTel {
             }
         };
 
-        // First sample sets the deltas, report zero usage until we have a diff.
         if self.first_usage_read {
             self.first_usage_read = false;
             let usages = curr_cores
@@ -127,24 +152,21 @@ impl CpuTel {
 
     fn poll_power(&mut self) -> f64 {
         if self.energy_path.is_none() && !self.rapl_discovered {
-            self.energy_path = cpu_impl::discover_rapl_path();
+            self.energy_path = cpu_impl::discover_rapl_path(&self.root);
             self.rapl_discovered = self.energy_path.is_none();
         }
 
-        let Some(energy_uj) = self
-            .energy_path
-            .as_deref()
-            .and_then(cpu_impl::read_energy_uj)
-        else {
-            return 0.0;
+        let energy_uj = match self.energy_path.as_ref().and_then(cpu_impl::read_energy_uj) {
+            Some(v) => v,
+            None => return 0.0,
         };
 
         let now = Instant::now();
         let mut power = 0.0;
 
         if self.prev_energy_uj > 0.0 {
-            // The counter can wrap, clamp to zero to avoid a negative spike.
-            let delta_uj = (energy_uj - self.prev_energy_uj).max(0.0);
+            let delta = energy_uj - self.prev_energy_uj;
+            let delta_uj = if delta > 0.0 { delta } else { 0.0 };
             let delta_sec = now.duration_since(self.prev_energy_time).as_secs_f64();
             if delta_sec > 0.0 {
                 power = delta_uj / 1_000_000.0 / delta_sec;
@@ -157,21 +179,19 @@ impl CpuTel {
         cpu_impl::round_to(power, 2)
     }
 }
-
-/// Linux sysfs / procfs readers. All read-only, no state.
+/// Virtual-filesystem readers (procfs / sysfs). All read-only, no state.
 mod cpu_impl {
     use crate::telemetry::models::{CpuCoreFrequency, CpuCoreTemperature};
     use log::trace;
-    use std::fs::{self, File, ReadDir};
     use std::io::{BufRead, BufReader};
-    use std::path::{Path, PathBuf};
+    use vfs::{VfsPath, VfsResult};
 
     use super::{CPUINFO_PATH, HWMON_ROOT, POWERCAP_ROOT, PROCSTAT_PATH, RAPL_DIR_PREFIXES};
 
     // /proc/cpuinfo
-
-    pub(super) fn read_cpu_info() -> std::io::Result<(String, Vec<CpuCoreFrequency>)> {
-        let reader = BufReader::new(File::open(CPUINFO_PATH)?);
+    pub(super) fn read_cpu_info(root: &VfsPath) -> VfsResult<(String, Vec<CpuCoreFrequency>)> {
+        let path = root.join(CPUINFO_PATH)?;
+        let reader = BufReader::new(path.open_file()?);
 
         let mut cpu_model = String::from("Unknown CPU");
         let mut model_set = false;
@@ -202,9 +222,9 @@ mod cpu_impl {
     }
 
     // /proc/stat
-
-    pub(super) fn read_current_ticks() -> std::io::Result<(Vec<i64>, Vec<Vec<i64>>)> {
-        let reader = BufReader::new(File::open(PROCSTAT_PATH)?);
+    pub(super) fn read_current_ticks(root: &VfsPath) -> VfsResult<(Vec<i64>, Vec<Vec<i64>>)> {
+        let path = root.join(PROCSTAT_PATH)?;
+        let reader = BufReader::new(path.open_file()?);
 
         let mut total = Vec::new();
         let mut cores = Vec::new();
@@ -253,28 +273,25 @@ mod cpu_impl {
     }
 
     // /sys/class/hwmon
-
-    pub(super) fn read_cpu_temps(core_count: usize) -> (i32, Vec<CpuCoreTemperature>) {
+    pub(super) fn read_cpu_temps(
+        root: &VfsPath,
+        core_count: usize,
+    ) -> (i32, Vec<CpuCoreTemperature>) {
         let mut overall = 0;
         let mut raw: Vec<CpuCoreTemperature> = Vec::new();
 
-        if let Ok(entries) = fs::read_dir(HWMON_ROOT) {
-            for entry in entries.flatten() {
-                let dir = entry.path();
-                let Ok(name) = fs::read_to_string(dir.join("name")) else {
-                    continue;
-                };
-
-                let (dev_overall, dev_temps) = read_hwmon_temps(name.trim(), &dir);
-                if dev_overall != 0 {
-                    overall = dev_overall;
+        if let Ok(entries) = root.join(HWMON_ROOT).and_then(|p| p.read_dir()) {
+            for dir in entries {
+                if let Ok(name) = dir.join("name").and_then(|p| p.read_to_string()) {
+                    let (dev_overall, dev_temps) = read_hwmon_temps(name.trim(), &dir);
+                    if dev_overall != 0 {
+                        overall = dev_overall;
+                    }
+                    raw.extend(dev_temps);
                 }
-                raw.extend(dev_temps);
             }
         }
 
-        // If the sensors line up with the core count, use them directly.
-        // Otherwise, fill every core with the average so callers see a stable array.
         if !raw.is_empty() && raw.len() == core_count {
             raw.sort_unstable_by_key(|t| t.core_index);
             return (overall, raw);
@@ -298,12 +315,12 @@ mod cpu_impl {
     }
 
     /// Handles both `coretemp` (Intel) and `k10temp` (AMD) label conventions.
-    fn read_hwmon_temps(name: &str, dir: &Path) -> (i32, Vec<CpuCoreTemperature>) {
+    fn read_hwmon_temps(name: &str, dir: &VfsPath) -> (i32, Vec<CpuCoreTemperature>) {
         let mut overall = 0;
         let mut has_tdie = false;
         let mut temps = Vec::new();
 
-        let Ok(entries) = fs::read_dir(dir) else {
+        let Ok(entries) = dir.read_dir() else {
             return (overall, temps);
         };
 
@@ -311,7 +328,10 @@ mod cpu_impl {
             let Some(temp) = read_millideg(&input) else {
                 continue;
             };
-            let label = read_trimmed(dir.join(format!("{prefix}_label")));
+            let label = read_trimmed(
+                &dir.join(format!("{prefix}_label"))
+                    .unwrap_or_else(|_| dir.clone()),
+            );
             let label = label.as_deref();
 
             match name {
@@ -352,42 +372,41 @@ mod cpu_impl {
     }
 
     /// Yields `(input_path, prefix)` for every `temp*_input` file in a hwmon dir.
-    fn sensor_inputs(entries: ReadDir) -> impl Iterator<Item = (PathBuf, String)> {
-        entries.flatten().filter_map(|entry| {
-            let name = entry.file_name();
-            let name = name.to_str()?;
+    fn sensor_inputs(
+        entries: Box<dyn Iterator<Item = VfsPath> + Send>,
+    ) -> impl Iterator<Item = (VfsPath, String)> {
+        entries.filter_map(|entry| {
+            let name = entry.filename();
             let prefix = name.strip_suffix("_input")?;
             prefix
                 .starts_with("temp")
-                .then(|| (entry.path(), prefix.to_owned()))
+                .then(|| (entry, prefix.to_owned()))
         })
     }
 
-    fn read_millideg(path: &Path) -> Option<i32> {
+    fn read_millideg(path: &VfsPath) -> Option<i32> {
         let raw = read_trimmed(path)?;
         let millideg: i64 = raw.parse().ok()?;
         Some(millideg.div_euclid(1000) as i32)
     }
 
     // /sys/class/powercap (RAPL)
+    pub(super) fn discover_rapl_path(root: &VfsPath) -> Option<VfsPath> {
+        let entries = root.join(POWERCAP_ROOT).ok()?.read_dir().ok()?;
 
-    pub(super) fn discover_rapl_path() -> Option<PathBuf> {
-        let entries = fs::read_dir(POWERCAP_ROOT).ok()?;
+        let mut top_level: Option<VfsPath> = None;
+        let mut sub_zone: Option<VfsPath> = None;
 
-        let mut top_level: Option<PathBuf> = None;
-        let mut sub_zone: Option<PathBuf> = None;
-
-        for entry in entries.flatten() {
-            let dir = entry.path();
-            let Ok(dir_name) = entry.file_name().into_string() else {
-                continue;
-            };
+        for dir in entries {
+            let dir_name = dir.filename();
             if !RAPL_DIR_PREFIXES.iter().any(|p| dir_name.starts_with(p)) {
                 continue;
             }
 
-            let energy_path = dir.join("energy_uj");
-            if !energy_path.exists() {
+            let Ok(energy_path) = dir.join("energy_uj") else {
+                continue;
+            };
+            if !energy_path.exists().unwrap_or(false) {
                 continue;
             }
 
@@ -396,9 +415,9 @@ mod cpu_impl {
                 continue;
             }
 
-            let name = read_trimmed(dir.join("name")).unwrap_or_default();
+            let name = read_trimmed(&dir.join("name").ok()?).unwrap_or_default();
             if name.starts_with("package") {
-                trace!("Discovered RAPL power domain: {}", energy_path.display());
+                trace!("Discovered RAPL power domain: {}", energy_path.as_str());
                 return Some(energy_path);
             }
 
@@ -407,18 +426,18 @@ mod cpu_impl {
 
         let chosen = top_level.or(sub_zone);
         if let Some(ref p) = chosen {
-            trace!("Using fallback RAPL domain: {}", p.display());
+            trace!("Using fallback RAPL domain: {}", p.as_str());
         }
         chosen
     }
 
-    pub(super) fn read_energy_uj(path: &Path) -> Option<f64> {
+    pub(super) fn read_energy_uj(path: &VfsPath) -> Option<f64> {
         read_trimmed(path)?.parse().ok()
     }
 
     // utils
-    fn read_trimmed(path: impl AsRef<Path>) -> Option<String> {
-        Some(fs::read_to_string(path).ok()?.trim().to_owned())
+    fn read_trimmed(path: &VfsPath) -> Option<String> {
+        Some(path.read_to_string().ok()?.trim().to_owned())
     }
 
     #[inline]

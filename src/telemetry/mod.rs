@@ -4,57 +4,64 @@
 pub mod models;
 use log::debug;
 
+/// use the linux implementation as the platform
 #[cfg(target_os = "linux")]
 mod linux;
 #[cfg(target_os = "linux")]
-use linux as sys;
+use linux as platform;
 
+/// use the windows implementation as the platform
 #[cfg(target_os = "windows")]
 mod windows;
 #[cfg(target_os = "windows")]
-use windows as sys;
+use windows as platform;
+
+pub use platform::{
+    cpu::CpuTel, drive::DriveTel, gpu::GpuTel, memory::MemoryTel, network::NetworkTel,
+    process::ProcessTel, system::SystemTel,
+};
 
 /// Aggregates all telemetry collectors into a single entry point.
 ///
 /// Each field is a platform-specific implementation of a telemetry
-/// service. Call any or all update methods to populate their snapshots,
-/// then read individual snapshots via each service's `snapshot()` method.
-pub struct Telemetry {
+/// service. Platform-specific references are decided at compile time.
+pub struct Aggregate {
     /// CPU telemetry collector.
-    pub cpu: sys::cpu::CpuTel,
+    pub cpu: CpuTel,
     /// Drive (storage) telemetry collector.
-    pub drive: sys::drive::DriveTel,
+    pub drive: DriveTel,
     /// GPU telemetry collector.
-    pub gpu: sys::gpu::GpuTel,
+    pub gpu: GpuTel,
     /// Memory telemetry collector.
-    pub memory: sys::memory::MemoryTel,
+    pub memory: MemoryTel,
     /// Network telemetry collector.
-    pub network: sys::network::NetworkTel,
+    pub network: NetworkTel,
     /// Process telemetry collector.
-    pub process: sys::process::ProcessTel,
+    pub process: ProcessTel,
     /// System-level telemetry collector.
-    pub system: sys::system::SystemTel,
+    pub system: SystemTel,
 }
 
-impl Default for Telemetry {
+impl Default for Aggregate {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl Telemetry {
-    /// Creates a new [`Telemetry`] instance with all snapshots initialized
+impl Aggregate {
+    /// Creates a new [`Aggregate`] instance with all snapshots initialized
     /// to their default (empty/zero) values.
+    #[must_use]
     pub fn new() -> Self {
         debug!("Creating new telemetry instance");
         Self {
-            cpu: sys::cpu::CpuTel::new(),
-            drive: sys::drive::DriveTel::new(),
-            gpu: sys::gpu::GpuTel::new(),
-            memory: sys::memory::MemoryTel::new(),
-            network: sys::network::NetworkTel::new(),
-            process: sys::process::ProcessTel::new(),
-            system: sys::system::SystemTel::new(),
+            cpu: CpuTel::new(),
+            drive: DriveTel::new(),
+            gpu: GpuTel::new(),
+            memory: MemoryTel::new(),
+            network: NetworkTel::new(),
+            process: ProcessTel::new(),
+            system: SystemTel::new(),
         }
     }
 

@@ -3,11 +3,19 @@
 
 use crate::telemetry::models::GpuTelSnapshot;
 
+/// Stub
 pub struct GpuTel {
     snapshot: GpuTelSnapshot,
 }
 
+impl Default for GpuTel {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl GpuTel {
+    /// Stub
     pub fn new() -> Self {
         Self {
             snapshot: GpuTelSnapshot::default(),
