@@ -7,6 +7,3 @@
 /// Exposes the telemetry feature if enabled
 #[cfg(any(feature = "telemetry", feature = "full"))]
 pub mod telemetry;
-
-#[cfg(any(feature = "telemetry", feature = "full"))]
-pub use telemetry::Telemetry;

@@ -32,7 +32,7 @@ so consumers can read without triggering any I/O.
 
 - **Cross-platform** – Linux and Windows implementations behind a single interface
 - **Snapshot-based** – each service caches its state, consumers read without I/O
-- **Concurrent updates** – `Telemetry::update_all()` uses `rayon` to update every service in parallel
+- **Concurrent updates** – `Aggregate::update_all()` uses `rayon` to update every service in parallel
 - **Serde-ready** – all snapshot models serialize/deserialize out of the box
 - **Feature-gated** – enable only what you need via Cargo features
 
@@ -51,10 +51,10 @@ Basic example:
 use std::thread;
 use std::time::Duration;
 
-use kyanite_core::Telemetry;
+use kyanite_core::telemetry::Aggregate;
 
 fn main() {
-    let mut telemetry = Telemetry::new();
+    let mut telemetry = Aggregate::new();
 
     telemetry.update_all();
     thread::sleep(Duration::from_secs(1));
@@ -72,10 +72,10 @@ cargo run --example telemetry --features telemetry
 
 ## Cargo Features
 
-| Feature     | Default | Description                                 |
-|-------------|---------|---------------------------------------------|
-| `full`      | No      | Alias that enables every available feature. |
-| `telemetry` | No      | Enables the full telemetry subsystem.       |
+| Feature     | Default | Description                                         |
+|-------------|---------|-----------------------------------------------------|
+| `full`      | No      | Alias that enables every available non-dev feature. |
+| `telemetry` | No      | Enables the full telemetry subsystem.               |
 
 ## Documentation
 
