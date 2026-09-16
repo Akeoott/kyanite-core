@@ -55,14 +55,6 @@ body:
     validations:
       required: true
 
-  - type: upload
-    id: screenshots-logs
-    attributes:
-      label: Screenshots / Logs
-      description: If applicable, add logs, screenshots, or videos to help explain your problem.
-    validations:
-      required: false
-
   - type: input
     id: os
     attributes:
@@ -80,6 +72,14 @@ body:
       placeholder: "v1.1.0"
     validations:
       required: true
+
+  - type: upload
+    id: screenshots-logs
+    attributes:
+      label: Screenshots / Logs
+      description: If applicable, add logs, screenshots, or videos to help explain your problem.
+    validations:
+      required: false
 
   - type: textarea
     id: additional-context
