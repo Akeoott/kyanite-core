@@ -3,9 +3,9 @@ Thank you for contributing!
 Before submitting, please make sure you have read and followed the guidelines in CONTRIBUTING.md.
 -->
 
-## Description
+## Summary
 <!--
-Write a clear description. You decide the structure.
+Write a clear summary. You decide the structure.
 
 Suggestions you can use or ignore:
 - What the change does and why
