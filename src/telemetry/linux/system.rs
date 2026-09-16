@@ -1,14 +1,14 @@
 // Copyright (c) Akeoot / Akeoott <contact@kyanite.mov>. Licensed under the GPL-3.0 Licence.
 // See the LICENSE file in the repository root for full license text.
 
+use crate::telemetry::models::SystemTelSnapshot;
 use log::trace;
 use vfs::{PhysicalFS, VfsPath};
-use crate::telemetry::models::SystemTelSnapshot;
 
 /// Stub
 pub struct SystemTel {
     snapshot: SystemTelSnapshot,
-    
+
     /// Virtual file system
     root: VfsPath,
 }
@@ -47,5 +47,4 @@ impl SystemTel {
             ..Default::default()
         };
     }
-
 }

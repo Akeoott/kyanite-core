@@ -19,7 +19,7 @@ const RAPL_DIR_PREFIXES: &[&str] = &["intel-rapl", "amd-rapl"];
 /// CPU telemetry collector.
 pub struct CpuTel {
     snapshot: CpuTelSnapshot,
-    
+
     /// Virtual file system
     root: VfsPath,
 
