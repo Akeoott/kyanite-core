@@ -1,0 +1,83 @@
+name: Security Report
+description: Report an issue to help the project improve.
+title: "[Security] "
+labels: ["type/Security"]
+assignees: ["Akeoott"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please search open and closed issues before submitting a new one, and read `.github/SECURITY.md`.
+        If this report contains sensitive or private data, **do not post it publicly**. Email akeoot@pm.me instead.
+        Otherwise, focus on the security issue itself: what it is, how to reproduce it, and what impact it has. Include only the minimum data needed to understand and fix the problem.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: A clear and concise description of what the security issue is.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected-behavior
+    attributes:
+      label: Expected behavior
+      description: A clear and concise description of what you expected to happen.
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual-behavior
+    attributes:
+      label: Actual behavior
+      description: A clear and concise description of what is actually happening.
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps-to-reproduce
+    attributes:
+      label: Steps to reproduce
+      description: If applicable, list the steps to reproduce the security issue (add or remove as many steps as needed).
+      placeholder: |
+        1.
+        2.
+        3.
+        4.
+    validations:
+      required: false
+
+  - type: upload
+    id: screenshots-logs
+    attributes:
+      label: Screenshots / Logs
+      description: If applicable, add logs, screenshots, or videos to help explain your problem.
+    validations:
+      required: false
+
+  - type: input
+    id: os
+    attributes:
+      label: Operating System
+      description: e.g. Ubuntu 24.04 x86_64 / Windows 11 23H2
+      placeholder: "Ubuntu 24.04 x86_64"
+    validations:
+      required: false
+
+  - type: input
+    id: version
+    attributes:
+      label: Application version
+      description: e.g. v1.1.0, commit hash, or `main`
+      placeholder: "v1.1.0"
+    validations:
+      required: false
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional context
+      description: Add any other context about the problem here.
+    validations:
+      required: false

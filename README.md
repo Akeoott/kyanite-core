@@ -1,9 +1,9 @@
 # kyanite-core
 
 [![Crates.io Version](https://img.shields.io/crates/v/kyanite-core?style=for-the-badge&logo=rust&labelColor=%231a1b1f&color=%23dea584)](https://crates.io/crates/kyanite-core)
-[![docs.rs](https://img.shields.io/docsrs/kyanite-core?style=for-the-badge&logo=docs.rs&labelColor=%231a1b1f)](https://docs.rs/kyanite-core)<br>
-[![License](https://img.shields.io/crates/l/kyanite-core?style=for-the-badge&labelColor=%231a1b1f)](https://github.com/Akeoott/kyanite-core/blob/main/LICENSE)
-[![CodeFactor Grade](https://img.shields.io/codefactor/grade/github/Akeoott/kyanite-core?style=for-the-badge&logoSize=auto&labelColor=%231a1b1f)](https://www.codefactor.io/repository/github/akeoott/kyanite-core)
+[![CodeFactor Grade](https://img.shields.io/codefactor/grade/github/Akeoott/kyanite-core?style=for-the-badge&logoSize=auto&labelColor=%231a1b1f)](https://www.codefactor.io/repository/github/akeoott/kyanite-core)<br>
+[![Continuous Integration](https://img.shields.io/github/actions/workflow/status/Akeoott/kyanite-core/ci.yaml?branch=main&style=for-the-badge&logo=githubactions&logoColor=%23ffffff&labelColor=%231a1b1f)](https://github.com/Akeoott/kyanite-core/actions/workflows/ci.yaml)
+[![docs.rs](https://img.shields.io/docsrs/kyanite-core?style=for-the-badge&logo=docs.rs&labelColor=%231a1b1f)](https://docs.rs/kyanite-core)
 
 ### The core library for the kyanite project
 
@@ -30,11 +30,11 @@ so consumers can read without triggering any I/O.
 
 ### Features
 
-- **Cross-platform** – Linux and Windows implementations behind a single interface
-- **Snapshot-based** – each service caches its state, consumers read without I/O
-- **Concurrent updates** – `Aggregate::update_all()` uses `rayon` to update every service in parallel
-- **Serde-ready** – all snapshot models serialize/deserialize out of the box
-- **Feature-gated** – enable only what you need via Cargo features
+- **Cross-platform** - Linux and Windows implementations behind a single interface
+- **Snapshot-based** - each service caches its state, consumers read without I/O
+- **Concurrent updates** - `Aggregate::update_all()` uses `rayon` to update every service in parallel
+- **Serde-ready** - all snapshot models serialize/deserialize out of the box
+- **Feature-gated** - enable only what you need via Cargo features
 
 ## Usage
 
@@ -70,27 +70,23 @@ For a full example covering all subsystems, see [`examples/telemetry.rs`](exampl
 cargo run --example telemetry --features telemetry
 ```
 
-## Cargo Features
+### Cargo Features
 
 | Feature     | Default | Description                                         |
 |-------------|---------|-----------------------------------------------------|
 | `full`      | No      | Alias that enables every available non-dev feature. |
 | `telemetry` | No      | Enables the full telemetry subsystem.               |
 
-## Documentation
-
-- **API reference** – [docs.rs/kyanite-core](https://docs.rs/kyanite-core)
-- **Source code** – [github.com/Akeoott/kyanite-core](https://github.com/Akeoott/kyanite-core)
-
-## Related Projects
-
-- [**kyanite-app**](https://github.com/Akeoott/kyanite-app) – The Tauri + Vue desktop application powered by this library.
-
 ## Contributing
 
-Contributions are welcome. Please open an issue first for major changes so we can discuss the approach.
+Contributions are welcome.<br>
+Please read our [CONTRIBUTING.md](https://github.com/Akeoott/kyanite-core/blob/main/.github/CONTRIBUTING.md) and [Code of Conduct](https://github.com/Akeoott/kyanite-core/blob/main/.github/CODE_OF_CONDUCT.md)
+for community guidelines, code style and commit conventions before contributing.
 
-## License
+### Documentation
 
-Licensed under the [GPL-3.0-or-later](https://github.com/Akeoott/kyanite-core/blob/main/LICENSE).
+  - **API reference** - [docs.rs/kyanite-core](https://docs.rs/kyanite-core)
+  - **Source code** - [github.com/Akeoott/kyanite-core](https://github.com/Akeoott/kyanite-core)
 
+### Related Projects
+  - [**kyanite-app**](https://github.com/Akeoott/kyanite-app) - The Tauri + Vue desktop application powered by this library.
