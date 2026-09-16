@@ -18,10 +18,10 @@ const RAPL_DIR_PREFIXES: &[&str] = &["intel-rapl", "amd-rapl"];
 
 /// CPU telemetry collector.
 pub struct CpuTel {
+    snapshot: CpuTelSnapshot,
+    
     /// Virtual file system
     root: VfsPath,
-
-    snapshot: CpuTelSnapshot,
 
     // /proc/stat delta state
     prev_total_ticks: Vec<i64>,
@@ -50,8 +50,8 @@ impl CpuTel {
     /// Creates a new CPU telemetry instance reading from a custom filesystem root.
     pub fn with_root(root: VfsPath) -> Self {
         Self {
-            root,
             snapshot: CpuTelSnapshot::default(),
+            root,
             prev_total_ticks: Vec::new(),
             prev_core_ticks: Vec::new(),
             first_usage_read: true,
@@ -179,6 +179,7 @@ impl CpuTel {
         cpu_impl::round_to(power, 2)
     }
 }
+
 /// Virtual-filesystem readers (procfs / sysfs). All read-only, no state.
 mod cpu_impl {
     use crate::telemetry::models::{CpuCoreFrequency, CpuCoreTemperature};
