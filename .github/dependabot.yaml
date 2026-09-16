@@ -13,8 +13,8 @@ updates:
       semver-minor-days: 7
       semver-patch-days: 3
     labels:
-      - "Type: Dependencies"
-      - "Type: Security"
+      - "type/Dependencies"
+      - "type/Security"
     groups:
       non-major-updates:
         patterns:
@@ -33,8 +33,8 @@ updates:
     cooldown:
       default-days: 5
     labels:
-      - "Type: Dependencies"
-      - "Type: Security"
+      - "type/Dependencies"
+      - "type/Security"
     groups:
       non-major-updates:
         patterns:
