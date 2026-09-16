@@ -1,10 +1,12 @@
 # Security Policy
 
-We take the security of the kyanite project seriously. This document explains how to report security issues, what to expect, and which versions receive security patches.
+We take the security of the kyanite project seriously.
+This document explains how to report security issues, what to expect, and which versions receive security patches.
 
 ## Scope
 
-This policy applies to the project’s code, configuration, build, release, and dependency ecosystem. The following areas are generally in scope for security reports:
+This policy applies to the project’s code, configuration, build, release, and dependency ecosystem.
+The following areas are generally in scope for security reports:
 
 - Authentication, authorization, or privilege escalation flaws
 - Injection vulnerabilities (command, code, path, template, query, etc.)
@@ -16,7 +18,8 @@ This list is not exhaustive. If you are unsure whether something qualifies, repo
 
 ## Supported Versions
 
-Security patches are applied to the default development branch. Releases are snapshots of that branch at a specific point in time and may receive a patch release if severity warrants it.
+Security patches are applied to the default development branch.
+Releases are snapshots of that branch at a specific point in time and may receive a patch release if severity warrants it.
 
 | Version / Branch | Supported                                            |
 |------------------|------------------------------------------------------|
@@ -30,7 +33,9 @@ We appreciate responsible disclosure. Please choose the appropriate channel belo
 
 ### Non-Sensitive Issues (Public)
 
-If the issue does **not** expose sensitive data or reveal exploitable details, open a public issue using the security report template. Follow the template instructions carefully.
+If the issue does **not** expose sensitive data or reveal exploitable details,
+[open a public issue](https://github.com/Akeoott/kyanite-core/issues/new?template=security_report.yaml) using the security report template.
+Follow the template instructions carefully.
 
 ### Sensitive Issues (Private)
 
